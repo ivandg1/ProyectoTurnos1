@@ -16,6 +16,7 @@
         <div class="card card-custom">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">Grilla de Turnos Rotativos</h4>
+                <small class="text-muted" id="totalTrabajadoresGrilla">Cargando...</small>
                 <div>
                     <button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#viewShiftsModal">
                         Mantenedor de Turnos
@@ -125,12 +126,17 @@
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label for="hora_entrada" class="form-label">Hora Entrada *</label>
-                                    <input type="time" class="form-control" id="hora_entrada" name="hora_entrada" required placeholder="HH:MM" >
-                                    <div class="invalid-feedback"></div>
+                                    <input type="text" class="form-control" id="hora_entrada" name="hora_entrada" 
+                                        placeholder="HH:MM" maxlength="5" style="font-family: monospace;" 
+                                        oninput="this.value = this.value.replace(/[^0-9:]/g, '').slice(0,5)" 
+                                        required>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label for="hora_salida" class="form-label">Hora Salida *</label>
-                                    <input type="time" class="form-control" id="hora_salida" name="hora_salida" required placeholder="HH:MM">
+                                    <input type="text" class="form-control" id="hora_salida" name="hora_salida" 
+                                        placeholder="HH:MM" maxlength="5" style="font-family: monospace;"
+                                        oninput="this.value = this.value.replace(/[^0-9:]/g, '').slice(0,5)"
+                                        required>
                                     <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-2 mb-3">
@@ -353,7 +359,6 @@ function guardarTurnoMantenedor(event) {
 
 // Editar turno
 function editarTurnoMantenedor(id) {
-    
     $.ajax({
         url: BASE_URL + '/api/tipos-turno',
         method: 'GET',
@@ -362,16 +367,29 @@ function editarTurnoMantenedor(id) {
             if (turno) {
                 $('#turno_id').val(turno.id);
                 $('#nombre').val(turno.nombre);
-                $('#hora_entrada').val(turno.hora_entrada);
-                $('#hora_salida').val(turno.hora_salida);
+                
+                // Formatear horas sin segundos (HH:MM)
+                let horaEntrada = turno.hora_entrada;
+                let horaSalida = turno.hora_salida;
+                
+                // Si la hora tiene segundos (HH:MM:SS), recortar a HH:MM
+                if (horaEntrada && horaEntrada.length > 5) {
+                    horaEntrada = horaEntrada.substring(0, 5);
+                }
+                if (horaSalida && horaSalida.length > 5) {
+                    horaSalida = horaSalida.substring(0, 5);
+                }
+                
+                $('#hora_entrada').val(horaEntrada);
+                $('#hora_salida').val(horaSalida);
                 $('#formTitle').text('Editar Turno');
                 $('#cancelEditBtn').show();
                 calcularHorasMantenedor();
                 
-                // Scroll al formulario
-                $('html, body').animate({
-                    scrollTop: $('#turnoForm').offset().top - 100
-                }, 500);
+                // ELIMINADO: El scroll que movía la pantalla de fondo
+                // $('html, body').animate({
+                //     scrollTop: $('#turnoForm').offset().top - 100
+                // }, 500);
             }
         },
         error: function() {
@@ -525,9 +543,14 @@ function cargarGrilla() {
         success: function(response) {
             renderizarGrilla(response.data);
             renderizarPaginacion(response);
+            // Actualizar contador con el total de registros (sin paginación)
+            if (response.total) {
+                $('#totalTrabajadoresGrilla').text(`Total: ${response.total} trabajadores`);
+            }
         },
         error: function() {
             $('#turnosGrid').html('<tr><td colspan="10" class="text-center">Error al cargar...</td></tr>');
+            $('#totalTrabajadoresGrilla').text('Total: -- trabajadores');
         }
     });
 }
@@ -707,8 +730,6 @@ function escapeHtml(text) {
 let asignacionesLocales = {};
 
 // Asignar turno a una celda (solo frontend)
-// Asignar turno a una celda (solo frontend con validación de límite)
-// Asignar turno a una celda (solo frontend con validación de límite)
 function asignarTurnoLocal(workerId, day, turnoData) {
     const key = `${workerId}_${day}`;
     const horasTurno = turnoData ? parseFloat(turnoData.horas_trabajadas) : 0;
@@ -991,10 +1012,19 @@ function exportarAsignaciones() {
 // RENDERIZADO DE GRILLA CON ASIGNACIONES LOCALES
 // ============================================
 
-// Modificar la función renderizarGrilla para usar asignacionesLocales
-// Renderizar grilla
+
 // Renderizar grilla con columna de total de horas
 function renderizarGrilla(workers) {
+    if (!workers || workers.length === 0) {
+        $('#turnosGrid').html('<tr><td colspan="10" class="text-center">No hay trabajadores...</td></tr>');
+        $('#totalTrabajadoresGrilla').text('Total: 0 trabajadores');
+        return;
+    }
+    
+    // Actualizar contador con el total de la respuesta (si viene de la API)
+    // Asumiendo que en la respuesta también viene el total general
+
+
     if (!workers || workers.length === 0) {
         $('#turnosGrid').html('<tr><td colspan="10" class="text-center">No hay trabajadores...</td></tr>');
         return;
@@ -1208,6 +1238,39 @@ $('#removeShiftBtn').off('click').on('click', function(e) {
     e.preventDefault();
     quitarTurno();
 });
+
+
+// Formatear hora mientras escribe
+function formatearHora(input) {
+    let valor = input.value.replace(/[^0-9]/g, '');
+    if (valor.length >= 2) {
+        valor = valor.slice(0,2) + ':' + valor.slice(2,4);
+    }
+    input.value = valor.slice(0,5);
+}
+
+// Aplicar a los inputs
+$('#hora_entrada, #hora_salida').on('input', function() {
+    formatearHora(this);
+});
+
+
+
+// Actualizar contador de trabajadores en la grilla
+function actualizarContadorGrilla() {
+    // Obtener el total de la paginación actual o del total general
+    $.ajax({
+        url: BASE_URL + '/api/total-trabajadores',
+        method: 'GET',
+        success: function(response) {
+            $('#totalTrabajadoresGrilla').text(`Total: ${response.total} trabajadores`);
+        },
+        error: function() {
+            $('#totalTrabajadoresGrilla').text('Total: -- trabajadores');
+        }
+    });
+}
+
 
 </script>
 @endpush

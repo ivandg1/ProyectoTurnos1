@@ -7,6 +7,7 @@
         <div class="card card-custom">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">Lista de Trabajadores</h4>
+                <small class="text-muted" id="totalTrabajadores">Cargando...</small>
                 <div>
                     <a href="{{ url('/turnos') }}" class="btn btn-info me-2">
                         Siguiente → Grilla de Turnos
@@ -91,6 +92,7 @@
 $(document).ready(function() {
     let isSubmitting = false;
     const BASE_URL = '/ProyectoTurnos1/public';
+    actualizarContadorTrabajadores();
     
     // Agregar trabajador vía AJAX
     $('#workerForm').on('submit', function(e) {
@@ -142,6 +144,7 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
+                    actualizarContadorTrabajadores();
                     addWorkerToTable(response.worker);
                     $('#workerForm')[0].reset();
                     $('#workerModal').modal('hide');
@@ -185,6 +188,9 @@ $(document).ready(function() {
             }
         });
     });
+
+
+    
     
     function addWorkerToTable(worker) {
         if (!$('#no-data-row').length) {
@@ -218,6 +224,25 @@ $(document).ready(function() {
         div.textContent = text;
         return div.innerHTML;
     }
+
+
+
+    // Actualizar contador de trabajadores
+    function actualizarContadorTrabajadores() {
+        $.ajax({
+            url: BASE_URL + '/api/total-trabajadores',
+            method: 'GET',
+            success: function(response) {
+                $('#totalTrabajadores').text(`Total: ${response.total} trabajadores`);
+            },
+            error: function() {
+                $('#totalTrabajadores').text('Total: -- trabajadores');
+            }
+        });
+
+    
+    }
+
     
     function attachDeleteEvent() {
         $('.delete-worker').off('click').on('click', function() {
@@ -235,6 +260,7 @@ $(document).ready(function() {
                 },
                 success: function(response) {
                     if (response.success) {
+                        actualizarContadorTrabajadores();
                         $row.fadeOut(300, function() {
                             $(this).remove();
                             if ($('#workers-table tr').length === 0) {
@@ -293,6 +319,11 @@ $(document).ready(function() {
     
     attachDeleteEvent();
 });
+
+
+
+
+
 </script>
 @endpush
 @endsection

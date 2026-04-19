@@ -49,19 +49,27 @@ Route::prefix('api/tipos-turno')->group(function () {
 });
 
 
-// Rutas para la grilla y asignaciones
 Route::post('/api/turnos-grid', function(Request $request) {
     $search = $request->search;
     $perPage = $request->per_page ?? 25;
     
-    $workers = Worker::when($search, function($query, $search) {
-        return $query->where('nombre', 'LIKE', "%{$search}%")
-                     ->orWhere('rut', 'LIKE', "%{$search}%");
-    })->paginate($perPage);
+    $query = Worker::query();
     
-    // Aquí se cargarían los turnos asignados (pendiente tabla de asignaciones)
+    if ($search) {
+        $query->where('nombre', 'LIKE', "%{$search}%")
+              ->orWhere('rut', 'LIKE', "%{$search}%");
+    }
     
-    return response()->json($workers);
+    $total = $query->count(); // Total sin paginación
+    $workers = $query->paginate($perPage);
+    
+    return response()->json([
+        'data' => $workers->items(),
+        'total' => $total,
+        'current_page' => $workers->currentPage(),
+        'last_page' => $workers->lastPage(),
+        'per_page' => $workers->perPage()
+    ]);
 });
 
 Route::post('/api/get-turno-asignado', function(Request $request) {
@@ -72,4 +80,10 @@ Route::post('/api/get-turno-asignado', function(Request $request) {
 Route::post('/api/asignar-turno', function(Request $request) {
     // Pendiente: guardar asignación
     return response()->json(['success' => true, 'message' => 'Turno asignado']);
+});
+
+// Ruta para obtener el total de trabajadores
+Route::get('/api/total-trabajadores', function() {
+    $total = App\Models\Worker::count();
+    return response()->json(['total' => $total]);
 });
