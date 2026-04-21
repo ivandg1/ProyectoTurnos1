@@ -87,3 +87,6 @@ Route::get('/api/total-trabajadores', function() {
     $total = App\Models\Worker::count();
     return response()->json(['total' => $total]);
 });
+
+// Ruta para la vista previa de rotación de turnos
+Route::get('/preview-rotacion', [App\Http\Controllers\TurnoController::class, 'preview'])->name('rotacion.preview');

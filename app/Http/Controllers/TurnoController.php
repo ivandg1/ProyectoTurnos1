@@ -17,4 +17,13 @@ class TurnoController extends Controller
         
         return view('turnos.index', compact('workers', 'days'));
     }
+
+    // Nuevo método para la vista previa de rotación
+    public function preview()
+    {
+        $workers = Worker::all();
+        $totalTrabajadores = $workers->count();
+        
+        return view('turnos.preview', compact('workers', 'totalTrabajadores'));
+    }
 }

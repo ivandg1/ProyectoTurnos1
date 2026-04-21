@@ -15,18 +15,44 @@
     <div class="col-md-12">
         <div class="card card-custom">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Grilla de Turnos Rotativos</h4>
-                <small class="text-muted" id="totalTrabajadoresGrilla">Cargando...</small>
+                <div>
+                    <h4 class="mb-0">Grilla de Turnos Rotativos</h4>
+                    <small class="text-muted" id="totalTrabajadoresGrilla">Cargando...</small>
+                </div>
                 <div>
                     <button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#viewShiftsModal">
                         Mantenedor de Turnos
                     </button>
+                    <a href="{{ url('/preview-rotacion') }}" class="btn btn-warning me-2">
+                        🔄 Vista Previa Rotación
+                    </a>
                     <a href="{{ url('/') }}" class="btn btn-secondary">
                         ← Volver a Trabajadores
                     </a>
                 </div>
             </div>
             <div class="card-body">
+
+                <div class="card-body py-3">
+                    <div class="row align-items-end">
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <label for="semanasRotacion" class="form-label small fw-bold">📅 Cantidad de Semanas</label>
+                            <input type="number" id="semanasRotacion" class="form-control form-control-sm" 
+                                value="4" min="1" step="1" style="font-family: monospace;">
+                        </div>
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <label for="sentidoRotacion" class="form-label small fw-bold">🔄 Sentido de la Rotación</label>
+                            <select id="sentidoRotacion" class="form-select form-select-sm">
+                                <option value="abajo">De arriba hacia abajo</option>
+                                <option value="arriba">De abajo hacia arriba</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Barra de paginación (opcional, para muchos trabajadores) -->
                 <div class="row mb-3">
                     <div class="col-md-6">
@@ -271,16 +297,17 @@ function resetFormMantenedor() {
 }
 
 // Guardar turno (crear o actualizar)
+// Guardar turno (crear o actualizar)
 function guardarTurnoMantenedor(event) {
     event.preventDefault();
-        
+    
     // Limpiar errores
     $('.is-invalid').removeClass('is-invalid');
     $('.invalid-feedback').text('');
     
     const nombre = $('#nombre').val().trim();
-    const horaEntrada = $('#hora_entrada').val();
-    const horaSalida = $('#hora_salida').val();
+    let horaEntrada = $('#hora_entrada').val().trim();
+    let horaSalida = $('#hora_salida').val().trim();
     
     // Validaciones básicas
     let hasError = false;
@@ -302,6 +329,26 @@ function guardarTurnoMantenedor(event) {
     
     if (hasError) return;
     
+    // Convertir a formato 24h si es necesario
+    function convertirHora24(horaStr) {
+        if (/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(horaStr)) {
+            return horaStr;
+        }
+        const match = horaStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)/i);
+        if (match) {
+            let horas = parseInt(match[1]);
+            const minutos = match[2];
+            const periodo = match[3].toUpperCase();
+            if (periodo === 'PM' && horas < 12) horas += 12;
+            if (periodo === 'AM' && horas === 12) horas = 0;
+            return `${horas.toString().padStart(2, '0')}:${minutos}`;
+        }
+        return horaStr;
+    }
+    
+    horaEntrada = convertirHora24(horaEntrada);
+    horaSalida = convertirHora24(horaSalida);
+    
     // Validar horas calculadas
     const horasValidas = calcularHorasMantenedor();
     if (!horasValidas) {
@@ -310,12 +357,16 @@ function guardarTurnoMantenedor(event) {
     }
     
     const turnoId = $('#turno_id').val();
-    const url = turnoId ? BASE_URL + '/api/tipos-turno/' + turnoId : BASE_URL + '/api/tipos-turno';
-    const method = turnoId ? 'PUT' : 'POST';
+    const esEdicion = turnoId && turnoId !== '';
+    const url = esEdicion ? BASE_URL + '/api/tipos-turno/' + turnoId : BASE_URL + '/api/tipos-turno';
+    const method = esEdicion ? 'PUT' : 'POST';
     
     const submitBtn = $('#saveTurnoBtn');
     const originalText = submitBtn.text();
     submitBtn.text('Guardando...').prop('disabled', true);
+    
+    // Guardar el turno ID original para usarlo después
+    const turnoIdOriginal = turnoId;
     
     $.ajax({
         url: url,
@@ -329,9 +380,32 @@ function guardarTurnoMantenedor(event) {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
+                // Obtener el ID del turno (puede ser nuevo o el existente)
+                const turnoActualizado = response.turno;
+                const turnoIdActualizado = turnoActualizado.id;
+                
+                // Calcular horas trabajadas actualizadas
+                const horasTrabajadasActualizadas = turnoActualizado.horas_trabajadas;
+                
+                // Si es edición, actualizar todas las asignaciones locales que usan este turno
+                if (esEdicion && turnoIdOriginal) {
+                    actualizarAsignacionesPorTurno(turnoIdOriginal, {
+                        id: turnoIdActualizado,
+                        nombre: nombre,
+                        hora_entrada: horaEntrada,
+                        hora_salida: horaSalida,
+                        horas_trabajadas: horasTrabajadasActualizadas
+                    });
+                }
+                
                 showToast(response.message, 'success');
                 resetFormMantenedor();
-                cargarTurnosMantenedor(); // Recargar la tabla SIN cerrar el modal
+                cargarTurnosMantenedor(); // Recargar la tabla del mantenedor
+                cargarTiposTurno(); // Recargar el select de asignación
+                
+                // Recargar la grilla para reflejar cambios en las celdas
+                cargarGrilla();
+                
             } else {
                 showToast(response.message || 'Error al guardar', 'error');
             }
@@ -355,6 +429,55 @@ function guardarTurnoMantenedor(event) {
             submitBtn.text(originalText).prop('disabled', false);
         }
     });
+}
+
+// Función para actualizar todas las asignaciones que usan un turno específico
+function actualizarAsignacionesPorTurno(turnoId, nuevosDatosTurno) {
+    let asignacionesActualizadas = 0;
+    
+    // Recorrer todas las asignaciones locales
+    Object.keys(asignacionesLocales).forEach(key => {
+        const asignacion = asignacionesLocales[key];
+        
+        // Si esta asignación usa el turno que fue editado
+        if (asignacion.id == turnoId) {
+            // Actualizar los datos del turno
+            asignacionesLocales[key] = {
+                id: nuevosDatosTurno.id,
+                nombre: nuevosDatosTurno.nombre,
+                hora_entrada: nuevosDatosTurno.hora_entrada,
+                hora_salida: nuevosDatosTurno.hora_salida,
+                horas_trabajadas: nuevosDatosTurno.horas_trabajadas
+            };
+            asignacionesActualizadas++;
+            
+            // Extraer workerId y día de la key
+            const [workerId, day] = key.split('_');
+            // Actualizar la celda visualmente
+            actualizarCeldaTurno(workerId, day);
+        }
+    });
+    
+    // Si se actualizaron asignaciones, recalcular todas las filas
+    if (asignacionesActualizadas > 0) {
+        // Obtener todos los workerIds únicos que fueron actualizados
+        const workerIdsActualizados = new Set();
+        Object.keys(asignacionesLocales).forEach(key => {
+            const asignacion = asignacionesLocales[key];
+            if (asignacion.id == turnoId) {
+                const [workerId] = key.split('_');
+                workerIdsActualizados.add(workerId);
+            }
+        });
+        
+        // Recalcular fila completa para cada trabajador afectado
+        workerIdsActualizados.forEach(workerId => {
+            actualizarFilaCompleta(workerId);
+        });
+        
+        console.log(`✅ Actualizadas ${asignacionesActualizadas} asignaciones del turno ID ${turnoId}`);
+        showToast(`Se actualizaron ${asignacionesActualizadas} asignaciones de turnos`, 'info');
+    }
 }
 
 // Editar turno
@@ -400,7 +523,22 @@ function editarTurnoMantenedor(id) {
 
 // Eliminar turno
 function eliminarTurnoMantenedor(id) {
-    if (!confirm('¿Estás seguro de eliminar este turno?')) return;
+    if (!confirm('¿Estás seguro de eliminar este turno? Esto también eliminará todas las asignaciones asociadas.')) return;
+    
+    // Primero, contar cuántas asignaciones serán afectadas
+    let asignacionesAfectadas = 0;
+    Object.keys(asignacionesLocales).forEach(key => {
+        if (asignacionesLocales[key].id == id) {
+            asignacionesAfectadas++;
+        }
+    });
+    
+    let mensajeConfirmacion = `¿Eliminar este turno?`;
+    if (asignacionesAfectadas > 0) {
+        mensajeConfirmacion = `Este turno está asignado a ${asignacionesAfectadas} celdas. ¿Eliminar de todas formas? Las asignaciones serán removidas.`;
+    }
+    
+    if (!confirm(mensajeConfirmacion)) return;
     
     $.ajax({
         url: BASE_URL + '/api/tipos-turno/' + id,
@@ -410,8 +548,29 @@ function eliminarTurnoMantenedor(id) {
         },
         success: function(response) {
             if (response.success) {
-                showToast(response.message, 'success');
-                cargarTurnosMantenedor(); // Recargar la tabla SIN cerrar el modal
+                // Eliminar todas las asignaciones locales que usan este turno
+                let asignacionesEliminadas = 0;
+                const workersAfectados = new Set();
+                
+                Object.keys(asignacionesLocales).forEach(key => {
+                    if (asignacionesLocales[key].id == id) {
+                        const [workerId, day] = key.split('_');
+                        delete asignacionesLocales[key];
+                        asignacionesEliminadas++;
+                        workersAfectados.add(workerId);
+                        // Limpiar la celda visualmente
+                        actualizarCeldaTurno(workerId, day);
+                    }
+                });
+                
+                // Recalcular filas de trabajadores afectados
+                workersAfectados.forEach(workerId => {
+                    actualizarFilaCompleta(workerId);
+                });
+                
+                showToast(response.message + (asignacionesEliminadas > 0 ? ` (${asignacionesEliminadas} asignaciones removidas)` : ''), 'success');
+                cargarTurnosMantenedor(); // Recargar la tabla del mantenedor
+                cargarTiposTurno(); // Recargar el select de asignación
                 
                 if ($('#turno_id').val() == id) {
                     resetFormMantenedor();
@@ -618,6 +777,12 @@ $('#saveShiftBtn').on('click', function() {
 
 // Eventos del mantenedor
 $(document).ready(function() {
+
+    $('#semanasRotacion').on('input change', function() {
+        validarSemanasConLimite();
+    });
+
+
     // Inicializar eventos del formulario del mantenedor
     $('#turnoForm').on('submit', guardarTurnoMantenedor);
     
@@ -644,6 +809,7 @@ $(document).ready(function() {
     $('#viewShiftsModal').on('show.bs.modal', function() {
         resetFormMantenedor();
         cargarTurnosMantenedor();
+        cargarTiposTurno();
     });
     
     // Eventos de la grilla principal
@@ -1269,6 +1435,23 @@ function actualizarContadorGrilla() {
             $('#totalTrabajadoresGrilla').text('Total: -- trabajadores');
         }
     });
+}
+
+
+function validarSemanasConLimite() {
+    
+    const maxSemanas = 20;
+    let valor = parseInt($('#semanasRotacion').val());
+            
+    if (isNaN(valor)) valor = 1;
+    if (valor < 1) valor = 1;
+    if (valor > maxSemanas) {
+        valor = maxSemanas;
+        $('#semanasRotacion').val(maxSemanas);
+        showToast(`El máximo de semanas es ${maxSemanas} !`, 'info');
+    }
+            
+    $('#semanasRotacion').val(valor);
 }
 
 
