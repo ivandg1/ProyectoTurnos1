@@ -23,81 +23,162 @@
                     <button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#viewShiftsModal">
                         Mantenedor de Turnos
                     </button>
-                    <a href="{{ url('/preview-rotacion') }}" class="btn btn-warning me-2">
-                        🔄 Vista Previa Rotación
-                    </a>
+
+                    <button type="button" class="btn btn-success btn-sm w-35" id="btnGuardarAsignaciones">
+                        💾 Guardar Cambios
+                    </button>
+                    
                     <a href="{{ url('/') }}" class="btn btn-secondary">
                         ← Volver a Trabajadores
                     </a>
                 </div>
             </div>
+
             <div class="card-body">
+                <!-- Navegación de pestañas -->
+                <ul class="nav nav-tabs mb-3" id="turnosTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="grilla-tab" data-bs-toggle="tab" data-bs-target="#grilla" type="button" role="tab">
+                            📋 Grilla de Turnos
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="coberturas-tab" data-bs-toggle="tab" data-bs-target="#coberturas" type="button" role="tab">
+                            📊 Cobertura por Horario
+                        </button>
+                    </li>
+                </ul>
 
-                <div class="card-body py-3">
-                    <div class="row align-items-end">
-                        <div class="col-md-4 mb-2 mb-md-0">
-                            <label for="semanasRotacion" class="form-label small fw-bold">📅 Cantidad de Semanas</label>
-                            <input type="number" id="semanasRotacion" class="form-control form-control-sm" 
-                                value="4" min="1" step="1" style="font-family: monospace;">
+                <!-- Contenido de las pestañas -->
+                <div class="tab-content" id="turnosTabsContent">
+                    
+                    <!-- Pestaña 1: Grilla de Turnos (TODO EL CONTENIDO EXISTENTE) -->
+                    <div class="tab-pane fade show active" id="grilla" role="tabpanel">
+                        <!-- Controles de Rotación -->
+                        <div class="card mb-3 border-info">
+                            <div class="card-header bg-info text-white py-2">
+                                <h6 class="mb-0">🔄 Rotación de Turnos</h6>
+                            </div>
+                            <div class="card-body py-3">
+                                <div class="row align-items-end">
+                                    <div class="col-md-4 mb-2 mb-md-0">
+                                        <label for="semanasRotacion" class="form-label small fw-bold">📅 Cantidad de Semanas</label>
+                                        <input type="number" id="semanasRotacion" class="form-control form-control-sm" 
+                                            value="4" min="1" step="1" style="font-family: monospace;">
+                                    </div>
+                                    <div class="col-md-4 mb-2 mb-md-0">
+
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-outline-info btn-sm w-100" id="btnVistaPrevia">
+                                            👁️ Vista Previa
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4 mb-2 mb-md-0">
-                            <label for="sentidoRotacion" class="form-label small fw-bold">🔄 Sentido de la Rotación</label>
-                            <select id="sentidoRotacion" class="form-select form-select-sm">
-                                <option value="abajo">De arriba hacia abajo</option>
-                                <option value="arriba">De abajo hacia arriba</option>
-                            </select>
+
+                        <!-- Controles de paginación y búsqueda -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="small fw-bold">Mostrar:</label>
+                                <select id="perPage" class="form-select form-select-sm d-inline-block w-auto ms-2">
+                                    <option value="10">10 trabajadores</option>
+                                    <option value="25" selected>25 trabajadores</option>
+                                    <option value="50">50 trabajadores</option>
+                                    <option value="100">100 trabajadores</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <label class="small fw-bold me-2">Buscar:</label>
+                                <input type="text" id="searchWorker" class="form-control form-control-sm d-inline-block w-auto" 
+                                    placeholder="Nombre o RUT...">
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            
+
+                        <!-- Tabla de grilla -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th style="width: 150px;">Trabajador</th>
+                                        <th style="width: 100px;">Lunes</th>
+                                        <th style="width: 100px;">Martes</th>
+                                        <th style="width: 100px;">Miércoles</th>
+                                        <th style="width: 100px;">Jueves</th>
+                                        <th style="width: 100px;">Viernes</th>
+                                        <th style="width: 100px;">Sábado</th>
+                                        <th style="width: 100px;">Domingo</th>
+                                        <th style="width: 100px;">Total Semanal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="turnosGrid">
+                                    <tr><td colspan="9" class="text-center">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Paginación -->
+                        <div id="pagination" class="mt-3"></div>
+                    </div>
+
+                    <!-- Pestaña 2: Tabla de Coberturas (VACÍA POR AHORA) -->
+                    <!-- Pestaña 2: Tabla de Coberturas -->
+                    <div class="tab-pane fade" id="coberturas" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">📊 Cobertura por Horario de Entrada y Día</h6>
+                                <span class="badge bg-light text-dark" id="totalAsignacionesCobertura">0 asignaciones</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover table-sm" id="coberturasTable">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th style="width: 120px;">Hora Entrada</th>
+                                                <th style="width: 100px;">Lunes</th>
+                                                <th style="width: 100px;">Martes</th>
+                                                <th style="width: 100px;">Miércoles</th>
+                                                <th style="width: 100px;">Jueves</th>
+                                                <th style="width: 100px;">Viernes</th>
+                                                <th style="width: 100px;">Sábado</th>
+                                                <th style="width: 100px;">Domingo</th>
+                                                <th style="width: 100px;">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="coberturasBody">
+                                            <tr><td colspan="9" class="text-center">Calculando coberturas...</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot class="table-secondary">
+                                            <tr>
+                                                <td class="fw-bold">TOTAL DIARIO</td>
+                                                <td class="fw-bold text-center" id="totalLunes">0</td>
+                                                <td class="fw-bold text-center" id="totalMartes">0</td>
+                                                <td class="fw-bold text-center" id="totalMiercoles">0</td>
+                                                <td class="fw-bold text-center" id="totalJueves">0</td>
+                                                <td class="fw-bold text-center" id="totalViernes">0</td>
+                                                <td class="fw-bold text-center" id="totalSabado">0</td>
+                                                <td class="fw-bold text-center" id="totalDomingo">0</td>
+                                                <td class="fw-bold text-center" id="totalGeneral">0</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="alert alert-info mt-3">
+                                    <small>ℹ️ La cobertura se calcula automáticamente al asignar o quitar turnos en la grilla.</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Barra de paginación (opcional, para muchos trabajadores) -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label>Mostrar:</label>
-                        <select id="perPage" class="form-select form-select-sm d-inline-block w-auto">
-                            <option value="10">10 trabajadores</option>
-                            <option value="25" selected>25 trabajadores</option>
-                            <option value="50">50 trabajadores</option>
-                            <option value="100">100 trabajadores</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <input type="text" id="searchWorker" class="form-control form-control-sm d-inline-block w-auto" 
-                               placeholder="Buscar trabajador...">
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
-                        <thead class="table-dark">
-                            <tr>
-                                <th style="width: 150px;">Trabajador</th>
-                                <th style="width: 100px;">Lunes</th>
-                                <th style="width: 100px;">Martes</th>
-                                <th style="width: 100px;">Miércoles</th>
-                                <th style="width: 100px;">Jueves</th>
-                                <th style="width: 100px;">Viernes</th>
-                                <th style="width: 100px;">Sábado</th>
-                                <th style="width: 100px;">Domingo</th>
-                                <th style="width: 100px;">Horas</th>
-                            </tr>
-                        </thead>
-                        <tbody id="turnosGrid">
-                            <!-- Los datos se cargan vía AJAX -->
-                            <tr><td colspan="9" class="text-center">Cargando...</td><tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Paginación -->
-                <div id="pagination" class="mt-3"></div>
+                </div><!--Fin turnosTabContent-->
             </div>
-        </div>
-    </div>
-</div>
+
+
+        </div> <!--Fin card-custom-->
+    </div><!--Fin col-md-12-->
+</div><!--Fin row-->
 
 <!-- Modal para asignar turno -->
 <div class="modal fade" id="assignShiftModal" tabindex="-1">
@@ -474,6 +555,9 @@ function actualizarAsignacionesPorTurno(turnoId, nuevosDatosTurno) {
         workerIdsActualizados.forEach(workerId => {
             actualizarFilaCompleta(workerId);
         });
+
+        // ✅ ACTUALIZAR COBERTURAS
+        actualizarCoberturas();
         
         console.log(`✅ Actualizadas ${asignacionesActualizadas} asignaciones del turno ID ${turnoId}`);
         showToast(`Se actualizaron ${asignacionesActualizadas} asignaciones de turnos`, 'info');
@@ -567,10 +651,13 @@ function eliminarTurnoMantenedor(id) {
                 workersAfectados.forEach(workerId => {
                     actualizarFilaCompleta(workerId);
                 });
-                
+
                 showToast(response.message + (asignacionesEliminadas > 0 ? ` (${asignacionesEliminadas} asignaciones removidas)` : ''), 'success');
                 cargarTurnosMantenedor(); // Recargar la tabla del mantenedor
                 cargarTiposTurno(); // Recargar el select de asignación
+
+                // ✅ ACTUALIZAR COBERTURAS
+                actualizarCoberturas();
                 
                 if ($('#turno_id').val() == id) {
                     resetFormMantenedor();
@@ -612,7 +699,6 @@ function cargarTiposTurno() {
 
 
 // Recargar el select con los turnos actuales
-// Recargar el select con los turnos actuales
 function recargarSelectTurnos() {
     
     const select = $('#turnoSelect');
@@ -648,7 +734,6 @@ function recargarSelectTurnos() {
 }
 
 // Función auxiliar para cargar el turno en el select
-// Versión ultra directa de cargarTurnoEnSelect
 function cargarTurnoEnSelect(asignacionActual) {
     
     if (asignacionActual && asignacionActual.id) {
@@ -778,10 +863,27 @@ $('#saveShiftBtn').on('click', function() {
 // Eventos del mantenedor
 $(document).ready(function() {
 
+    cargarAsignacionesDesdeBD();
+
+
+    // Evento para Vista Previa con validación
+    $('#btnVistaPrevia').off('click').on('click', function(e) {
+        e.preventDefault();
+        manejarVistaPrevia();
+    });
+
+    $('#btnGuardarAsignaciones').on('click', function() {
+        guardarAsignacionesEnBD();
+    });
+
+
+
     $('#semanasRotacion').on('input change', function() {
         validarSemanasConLimite();
     });
 
+    // Inicializar coberturas
+    actualizarCoberturas();
 
     // Inicializar eventos del formulario del mantenedor
     $('#turnoForm').on('submit', guardarTurnoMantenedor);
@@ -951,6 +1053,14 @@ function asignarTurnoLocal(workerId, day, turnoData) {
     
     // Actualizar la fila completa (para recalcular total semanal)
     actualizarFilaCompleta(workerId);
+
+     // Actualizar la celda en la grilla
+    actualizarCeldaTurno(workerId, day);
+    
+    
+    // ✅ ACTUALIZAR COBERTURAS
+    actualizarCoberturas();
+
     
     // Mostrar mensaje de éxito
     const mensaje = turnoData ? `Turno "${turnoData.nombre}" asignado (${turnoData.horas_trabajadas} hrs)` : 'Turno removido';
@@ -1127,6 +1237,8 @@ function quitarTurno() {
         
         // 3. Actualizar la fila completa (recalcular total semanal)
         actualizarFilaCompleta(workerId);
+        // ✅ ACTUALIZAR COBERTURAS
+        actualizarCoberturas();
         
         // 4. Limpiar el select del modal
         $('#turnoSelect').val('');
@@ -1134,6 +1246,9 @@ function quitarTurno() {
         // 5. Deshabilitar el botón quitar turno
         $('#removeShiftBtn').prop('disabled', true);
         $('#removeShiftBtn').css('opacity', '0.5');
+
+        actualizarCeldaTurno(workerId, day);
+        
         
         // 6. Mostrar mensaje de éxito
         showToast('Turno removido correctamente', 'success');
@@ -1160,6 +1275,8 @@ function limpiarTurnosTrabajador(workerId, workerName) {
         
         if (limpiados > 0) {
             actualizarFilaCompleta(workerId);
+            // ✅ ACTUALIZAR COBERTURAS
+            actualizarCoberturas();
             showToast(`Se limpiaron ${limpiados} turnos de ${workerName}`, 'success');
         } else {
             showToast(`${workerName} no tiene turnos asignados`, 'info');
@@ -1452,6 +1569,397 @@ function validarSemanasConLimite() {
     }
             
     $('#semanasRotacion').val(valor);
+}
+
+// ============================================
+// FUNCIONES DE COBERTURA POR DÍA Y HORA
+// ============================================
+
+// Mapeo de días
+const diasSemana = {
+    'lunes': { nombre: 'Lunes', indice: 0 },
+    'martes': { nombre: 'Martes', indice: 1 },
+    'miercoles': { nombre: 'Miércoles', indice: 2 },
+    'jueves': { nombre: 'Jueves', indice: 3 },
+    'viernes': { nombre: 'Viernes', indice: 4 },
+    'sabado': { nombre: 'Sábado', indice: 5 },
+    'domingo': { nombre: 'Domingo', indice: 6 }
+};
+
+// Calcular coberturas por hora de entrada y día
+function calcularCoberturasPorDia() {
+    // Estructura: { horaEntrada: { lunes: 0, martes: 0, ... } }
+    const coberturas = {};
+    let totalAsignaciones = 0;
+    
+    // Recorrer todas las asignaciones locales
+    Object.keys(asignacionesLocales).forEach(key => {
+        const asignacion = asignacionesLocales[key];
+        if (asignacion && asignacion.hora_entrada) {
+            const horaEntrada = asignacion.hora_entrada.substring(0, 5); // Formato HH:MM
+            const [workerId, dia] = key.split('_');
+            
+            if (!coberturas[horaEntrada]) {
+                coberturas[horaEntrada] = {
+                    hora: horaEntrada,
+                    turnoNombre: asignacion.nombre,
+                    lunes: 0, martes: 0, miercoles: 0, jueves: 0, viernes: 0, sabado: 0, domingo: 0,
+                    total: 0
+                };
+            }
+            
+            // Incrementar el contador del día correspondiente
+            if (coberturas[horaEntrada][dia] !== undefined) {
+                coberturas[horaEntrada][dia]++;
+                coberturas[horaEntrada].total++;
+                totalAsignaciones++;
+            }
+        }
+    });
+    
+    return { coberturas, totalAsignaciones };
+}
+
+// Renderizar la tabla de coberturas
+function renderizarCoberturas() {
+    const { coberturas, totalAsignaciones } = calcularCoberturasPorDia();
+    const tbody = $('#coberturasBody');
+    
+    // Actualizar el badge de total de asignaciones
+    $('#totalAsignacionesCobertura').text(`${totalAsignaciones} asignaciones`);
+    
+    if (totalAsignaciones === 0 || Object.keys(coberturas).length === 0) {
+        tbody.html('<tr><td colspan="9" class="text-center text-muted">No hay turnos asignados para calcular coberturas</td></tr>');
+        
+        // Resetear totales diarios
+        $('#totalLunes, #totalMartes, #totalMiercoles, #totalJueves, #totalViernes, #totalSabado, #totalDomingo, #totalGeneral').text('0');
+        return;
+    }
+    
+    // Ordenar las horas de entrada
+    const horasOrdenadas = Object.keys(coberturas).sort();
+    let html = '';
+    
+    // Inicializar totales por día
+    let totalesPorDia = {
+        lunes: 0, martes: 0, miercoles: 0, jueves: 0, viernes: 0, sabado: 0, domingo: 0
+    };
+    
+    horasOrdenadas.forEach(hora => {
+        const data = coberturas[hora];
+        
+        // Determinar color según la cantidad (opcional)
+        const getCellClass = (cantidad, maxEsperado = 10) => {
+            if (cantidad === 0) return 'text-muted bg-light';
+            if (cantidad >= 15) return 'bg-danger text-white';
+            if (cantidad >= 10) return 'bg-warning';
+            if (cantidad >= 5) return 'bg-success text-white';
+            return '';
+        };
+        
+        html += `<tr>
+            <td class="fw-bold">${data.hora}<br><small class="text-muted">${data.turnoNombre.substring(0, 15)}</small></td>
+            <td class="text-center ${getCellClass(data.lunes)}">${data.lunes || '—'}</td>
+            <td class="text-center ${getCellClass(data.martes)}">${data.martes || '—'}</td>
+            <td class="text-center ${getCellClass(data.miercoles)}">${data.miercoles || '—'}</td>
+            <td class="text-center ${getCellClass(data.jueves)}">${data.jueves || '—'}</td>
+            <td class="text-center ${getCellClass(data.viernes)}">${data.viernes || '—'}</td>
+            <td class="text-center ${getCellClass(data.sabado)}">${data.sabado || '—'}</td>
+            <td class="text-center ${getCellClass(data.domingo)}">${data.domingo || '—'}</td>
+            <td class="text-center fw-bold">${data.total}</td>
+        </tr>`;
+        
+        // Acumular totales por día
+        totalesPorDia.lunes += data.lunes;
+        totalesPorDia.martes += data.martes;
+        totalesPorDia.miercoles += data.miercoles;
+        totalesPorDia.jueves += data.jueves;
+        totalesPorDia.viernes += data.viernes;
+        totalesPorDia.sabado += data.sabado;
+        totalesPorDia.domingo += data.domingo;
+    });
+    
+    tbody.html(html);
+    
+    // Actualizar los totales del footer
+    const totalGeneral = Object.values(totalesPorDia).reduce((a, b) => a + b, 0);
+    
+    $('#totalLunes').text(totalesPorDia.lunes);
+    $('#totalMartes').text(totalesPorDia.martes);
+    $('#totalMiercoles').text(totalesPorDia.miercoles);
+    $('#totalJueves').text(totalesPorDia.jueves);
+    $('#totalViernes').text(totalesPorDia.viernes);
+    $('#totalSabado').text(totalesPorDia.sabado);
+    $('#totalDomingo').text(totalesPorDia.domingo);
+    $('#totalGeneral').text(totalGeneral);
+}
+
+// Actualizar coberturas (llamar después de cualquier cambio en asignaciones)
+function actualizarCoberturas() {
+    renderizarCoberturas();
+}
+
+// ============================================
+// GUARDAR Y CARGAR ASIGNACIONES TEMPORALES
+// ============================================
+
+// Guardar asignaciones en la base de datos
+function guardarAsignacionesEnBD() {
+    if (Object.keys(asignacionesLocales).length === 0) {
+        showToast('No hay asignaciones para guardar', 'warning');
+        return;
+    }
+    
+    const btn = $('#btnGuardarAsignaciones');
+    const originalText = btn.html();
+    btn.html('💾 Guardando...').prop('disabled', true);
+    
+    $.ajax({
+        url: BASE_URL + '/api/turnos-temp/guardar',
+        method: 'POST',
+        data: {
+            asignaciones: asignacionesLocales,
+            _token: $('meta[name="csrf-token"]').attr('content')
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                showToast(response.message, 'success');
+                // Opcional: cambiar el color del botón para indicar que hay datos guardados
+                $('#btnGuardarAsignaciones').removeClass('btn-success').addClass('btn-primary');
+            } else {
+                showToast(response.message || 'Error al guardar', 'error');
+            }
+        },
+        error: function(xhr) {
+            console.error('Error:', xhr);
+            showToast('Error al guardar las asignaciones', 'error');
+        },
+        complete: function() {
+            btn.html(originalText).prop('disabled', false);
+        }
+    });
+}
+
+// Cargar asignaciones desde la base de datos
+function cargarAsignacionesDesdeBD() {
+    showToast('Cargando asignaciones guardadas...', 'info');
+    
+    $.ajax({
+        url: BASE_URL + '/api/turnos-temp/cargar',
+        method: 'GET',
+        success: function(response) {
+            if (response.success && response.asignaciones) {
+                const asignacionesCargadas = response.asignaciones;
+                const cantidad = Object.keys(asignacionesCargadas).length;
+                
+                if (cantidad > 0) {
+                    // Reemplazar asignaciones locales
+                    asignacionesLocales = asignacionesCargadas;
+                    
+                    // Recargar la grilla
+                    cargarGrilla();
+                    
+                    // Actualizar coberturas
+                    actualizarCoberturas();
+                    
+                    showToast(`Se cargaron ${cantidad} asignaciones`, 'success');
+                    $('#btnGuardarAsignaciones').removeClass('btn-success').addClass('btn-primary');
+                } else {
+                    showToast('No hay asignaciones guardadas', 'info');
+                }
+            }
+        },
+        error: function() {
+            showToast('Error al cargar las asignaciones', 'error');
+        }
+    });
+}
+
+// Limpiar todas las asignaciones temporales en BD
+function limpiarAsignacionesEnBD() {
+    if (!confirm('¿Estás seguro de limpiar TODAS las asignaciones guardadas? Esta acción no se puede deshacer.')) return;
+    
+    $.ajax({
+        url: BASE_URL + '/api/turnos-temp/limpiar',
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            if (response.success) {
+                showToast(response.message, 'success');
+                // Opcional: limpiar también las asignaciones locales
+                // asignacionesLocales = {};
+                // cargarGrilla();
+                // actualizarCoberturas();
+                $('#btnGuardarAsignaciones').removeClass('btn-primary').addClass('btn-success');
+            } else {
+                showToast(response.message || 'Error al limpiar', 'error');
+            }
+        },
+        error: function() {
+            showToast('Error al limpiar las asignaciones', 'error');
+        }
+    });
+}
+
+// ============================================
+// VALIDACIÓN DE HORAS SEMANALES
+// ============================================
+
+// Validar que todos los trabajadores tengan exactamente 42 horas semanales
+function validarHorasSemanales() {
+    // Obtener todos los workerIds únicos
+    const workersIds = new Set();
+    Object.keys(asignacionesLocales).forEach(key => {
+        const workerId = parseInt(key.split('_')[0]);
+        workersIds.add(workerId);
+    });
+    
+    const resultados = [];
+    let todosCorrectos = true;
+    let trabajadoresConMas = [];
+    let trabajadoresConMenos = [];
+    
+    workersIds.forEach(workerId => {
+        const totalHoras = calcularTotalHorasSemanales(workerId);
+        
+        if (totalHoras > 42) {
+            todosCorrectos = false;
+            trabajadoresConMas.push({ id: workerId, horas: totalHoras });
+        } else if (totalHoras < 42) {
+            todosCorrectos = false;
+            trabajadoresConMenos.push({ id: workerId, horas: totalHoras });
+        }
+        
+        resultados.push({ workerId, totalHoras });
+    });
+    
+    return {
+        esValido: todosCorrectos,
+        trabajadoresConMas: trabajadoresConMas,
+        trabajadoresConMenos: trabajadoresConMenos,
+        resultados: resultados
+    };
+}
+
+// Obtener nombre del trabajador por ID
+function obtenerNombreTrabajador(workerId) {
+    let nombre = `ID: ${workerId}`;
+    
+    // Buscar en la grilla actual si es posible
+    $('.turno-cell[data-worker-id="' + workerId + '"]').each(function() {
+        const workerName = $(this).data('worker-name');
+        if (workerName) {
+            nombre = workerName;
+            return false;
+        }
+    });
+    
+    return nombre;
+}
+
+// Mostrar modal de confirmación con los detalles
+function mostrarModalConfirmacionRotacion(validacion) {
+    const { trabajadoresConMas, trabajadoresConMenos } = validacion;
+    
+    let mensajeHtml = '<div class="alert alert-warning">';
+    mensajeHtml += '<strong>⚠️ Atención:</strong> No todos los trabajadores cumplen con las 42 horas semanales.<br><br>';
+    
+    if (trabajadoresConMas.length > 0) {
+        mensajeHtml += '<strong class="text-danger">🔴 Trabajadores con EXCESO de horas (>42):</strong><br>';
+        mensajeHtml += '<ul>';
+        trabajadoresConMas.forEach(t => {
+            const nombre = obtenerNombreTrabajador(t.id);
+            mensajeHtml += `<li>${nombre} - ${t.horas.toFixed(1)} horas (excede por ${(t.horas - 42).toFixed(1)} hrs)</li>`;
+        });
+        mensajeHtml += '</ul><br>';
+    }
+    
+    if (trabajadoresConMenos.length > 0) {
+        mensajeHtml += '<strong class="text-warning">🟡 Trabajadores con FALTA de horas (<42):</strong><br>';
+        mensajeHtml += '<ul>';
+        trabajadoresConMenos.forEach(t => {
+            const nombre = obtenerNombreTrabajador(t.id);
+            mensajeHtml += `<li>${nombre} - ${t.horas.toFixed(1)} horas (faltan ${(42 - t.horas).toFixed(1)} hrs)</li>`;
+        });
+        mensajeHtml += '</ul><br>';
+    }
+    
+    mensajeHtml += '<hr>';
+    mensajeHtml += '<p>¿Deseas continuar con la rotación de todas maneras?</p>';
+    mensajeHtml += '</div>';
+    
+    // Crear modal dinámico
+    const modalHtml = `
+        <div class="modal fade" id="confirmacionRotacionModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white;">
+                        <h5 class="modal-title">⚠️ Validación de Horas Semanales</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        ${mensajeHtml}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-warning" id="confirmarContinuarBtn">Continuar de todas maneras</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal existente si hay
+    if ($('#confirmacionRotacionModal').length) {
+        $('#confirmacionRotacionModal').remove();
+    }
+    
+    $('body').append(modalHtml);
+    
+    // Evento para confirmar continuación
+    $('#confirmarContinuarBtn').off('click').on('click', function() {
+        $('#confirmacionRotacionModal').modal('hide');
+        // Redirigir a la vista previa
+        const semanas = $('#semanasRotacion').val();
+        let url = BASE_URL + '/preview-rotacion';
+        const params = [];
+        if (semanas && semanas !== '') params.push(`semanas=${semanas}`);
+        if (params.length > 0) url += '?' + params.join('&');
+        window.location.href = url;
+    });
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmacionRotacionModal'));
+    modal.show();
+}
+
+// Función principal para manejar el clic en Vista Previa
+function manejarVistaPrevia() {
+    const validacion = validarHorasSemanales();
+    
+    // Obtener parámetros
+    const semanas = $('#semanasRotacion').val();
+    
+    if (!semanas || semanas < 1) {
+        showToast('Seleccione una cantidad válida de semanas', 'warning');
+        return;
+    }
+    
+    if (validacion.esValido) {
+        // Todos tienen 42 horas exactas, ir directamente
+        showToast('✅ Todos los trabajadores cumplen con las 42 horas semanales', 'success');
+        let url = BASE_URL + '/preview-rotacion';
+        const params = [];
+        if (semanas && semanas !== '') params.push(`semanas=${semanas}`);
+        if (params.length > 0) url += '?' + params.join('&');
+        window.location.href = url;
+    } else {
+        // Mostrar modal de confirmación
+        mostrarModalConfirmacionRotacion(validacion);
+    }
 }
 
 
